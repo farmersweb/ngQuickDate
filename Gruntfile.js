@@ -7,7 +7,7 @@ module.exports = function(grunt) {
       compile: {
         files: {
           "spec/build/specs.js": ["spec/*.coffee"],
-          "/home/stew/app/assets/javascripts/ng-quick-date.js": ["src/*.coffee"]
+          "/home/stew/spolsky/app/assets/javascripts/ng-quick-date.js": ["src/*.coffee"]
         }
       }
     },

@@ -16,16 +16,18 @@ app.provider "ngQuickDateDefaults", ->
       dateFormat: 'M/d/yyyy'
       timeFormat: 'h:mm a'
       labelFormat: null
-      placeholder: 'Click to Set Date'
+      placeholder: ''
       hoverText: null
-      buttonIconHtml: null
+      buttonIconHtml: '<span class="icn">&#x1F4C5;</span>'
       closeButtonHtml: '&times;'
-      nextLinkHtml: 'Next &rarr;'
-      prevLinkHtml: '&larr; Prev'
+      nextLinkHtml: 'Next'
+      prevLinkHtml: 'Prev'
       disableTimepicker: false
       disableClearButton: false
+      disableDatebox: false
+      disableDatedisplay: false
       defaultTime: null
-      dayAbbreviations: ["Su", "M", "Tu", "W", "Th", "F", "Sa"],
+      dayAbbreviations: ["Su", "M", "Tu", "W", "Th", "F", "Sa"]
       dateFilter: null
       parseDateFunction: (str) ->
         seconds = Date.parse(str)
@@ -45,7 +47,9 @@ app.provider "ngQuickDateDefaults", ->
         @options[keyOrHash] = value
   }
 
-app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickDateDefaults, $filter, $sce) ->
+id_at = 0
+
+app.directive "quickDatepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickDateDefaults, $filter, $sce) ->
   restrict: "E"
   require: "ngModel"
   scope:
@@ -55,6 +59,9 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
 
   replace: true
   link: (scope, element, attrs, ngModel) ->
+    scope.myId = "quickdate_" + id_at
+    id_at++
+
     debug = attrs.debug && attrs.debug.length
 
     # INITIALIZE VARIABLES
@@ -77,7 +84,10 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
     setConfigOptions = ->
       for key, value of ngQuickDateDefaults
         if key.match(/[Hh]tml/)
-          scope[key] = $sce.trustAsHtml(ngQuickDateDefaults[key] || "")
+          try 
+            scope[key] = $sce.trustAsHtml(ngQuickDateDefaults[key] || "")
+          catch
+            console.log( e )
         else if !scope[key] && attrs[key]
           scope[key] = attrs[key]
         else if !scope[key]
@@ -136,6 +146,7 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
             d.setSeconds(time[2] || 0)
           selected = scope.ngModel && d && datesAreEqual(d, scope.ngModel)
           today = datesAreEqual(d, new Date())
+
           weeks[row].push({
             date: d
             selected: selected
@@ -193,7 +204,7 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
 
     scope.$watch('calendarShown', (newVal, oldVal) ->
         dateInput = angular.element(element[0].querySelector(".quickdate-date-input"))[0]
-        dateInput.select()
+        dateInput && dateInput.select()
     )
 
 
@@ -204,11 +215,14 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
 
     # VIEW ACTIONS
     # ==================================
-    scope.toggleCalendar = (show) ->
-      if isFinite(show)
+    scope.toggleCalendar = (show, event) ->
+      if _.isBoolean(show)
         scope.calendarShown = show
       else
         scope.calendarShown = not scope.calendarShown
+
+      if scope.calendarShown
+        setCalendarRows()
 
     scope.setDate = (date, closeCalendar=true) ->
       changed = (!scope.ngModel && date) || (scope.ngModel && !date) || (date.getTime() != stringToDate(scope.ngModel).getTime())
@@ -275,6 +289,7 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
   template: """
               <div class='quickdate'>
                 <a id='{{ myId }}' href='javascript: void(0);' ng-click='toggleCalendar( null, $event )' class='quickdate-button' title='{{hoverText}}'>
+                  <div ng-hide='iconClass' ng-bind-html='buttonIconHtml'></div>
                   <span ng-hide='disableDatedisplay'>{{mainButtonStr()}}</span>
                 </a>
                 <div class='quickdate-popup' ng-class='{ open: calendarShown }' ng-if='calendarShown' >
@@ -296,20 +311,21 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
                   <div class='quickdate-calendar-header'>
                     <a href='' class='quickdate-prev-month quickdate-action-link' tabindex='-1' ng-click='prevMonth()'>
                       <div ng-bind-html='prevLinkHtml'></div>
-                    </a>      
-                    <span class='quickdate-month'> {{calendarDate | date:'MMMM yyyy'}} </span>
+                    </a>
+                    <span class='quickdate-month'>{{calendarDate | date:'MMMM yyyy'}}</span>
                     <a href='' class='quickdate-next-month quickdate-action-link' ng-click='nextMonth()' tabindex='-1' >
                       <div ng-bind-html='nextLinkHtml'></div>
                     </a>
                   </div>
-                  <table class='quickdate-calendar'> <thead>
+                  <table class='quickdate-calendar'>
+                    <thead>
                       <tr>
                         <th ng-repeat='day in dayAbbreviations'>{{day}}</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr ng-repeat='week in weeks'>
-                        <td ng-mousedown='setDate(day.date)' ng-class='{\"disabled-date\": day.disabled,\"other-month\": day.other, \"selected\": day.selected, \"is-today\": day.today}' ng-repeat='day in week'>{{day.date | date:'d'}}</td>
+                        <td ng-mousedown='setDate(day.date)' ng-class='{"disabled-date": day.disabled,"other-month": day.other, "selected": day.selected, "is-today": day.today}' ng-repeat='day in week'>{{day.date | date:'d'}}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -318,6 +334,7 @@ app.directive "datepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQuickD
                   </div>
                 </div>
               </div>
+
             """
 ]
 
