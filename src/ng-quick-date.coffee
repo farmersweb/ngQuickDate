@@ -80,6 +80,9 @@ app.directive "quickDatepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQ
       setConfigOptions()
       setInputDateFromModel()
       setCalendarDateFromModel()
+      
+      #  scope.control = {}
+      #  scope.control.disableDatedisplay = scope.disableDatedisplay
 
     setConfigOptions = ->
       for key, value of ngQuickDateDefaults
@@ -101,15 +104,15 @@ app.directive "quickDatepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQ
 
     # VIEW SETUP
     # ================================
-    datepickerClicked = false
-    window.document.addEventListener 'click', (event) ->
-      unless datepickerClicked
+
+    # because jquery is sanity
+    $( document.body ).on "click", (event) ->
+      if scope.calendarShown && event.target
         scope.toggleCalendar(false)
         scope.$apply()
-      datepickerClicked = false
-
-    angular.element(element[0])[0].addEventListener 'click', (event) ->
-      datepickerClicked = true
+    
+    #  angular.element(element[0])[0].addEventListener 'click', (event) ->
+    #    datepickerClicked = true
 
     # SCOPE MANIPULATION
     # ================================
@@ -207,6 +210,9 @@ app.directive "quickDatepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQ
         dateInput && dateInput.select()
     )
 
+    # EVENT GOBBLERS
+    scope.filterClick = ( $event ) ->
+      $event.stopPropagation()
 
     # VIEW HELPERS
     # ==================================
@@ -287,7 +293,7 @@ app.directive "quickDatepicker", ['ngQuickDateDefaults', '$filter', '$sce', (ngQ
   # TEMPLATE
   # ================================================================
   template: """
-              <div class='quickdate'>
+              <div class='quickdate' ng-click="filterClick( $event )">
                 <a id='{{ myId }}' href='javascript: void(0);' ng-click='toggleCalendar( null, $event )' class='quickdate-button' title='{{hoverText}}'>
                   <div ng-hide='iconClass' ng-bind-html='buttonIconHtml'></div>
                   <span ng-hide='disableDatedisplay'>{{mainButtonStr()}}</span>
